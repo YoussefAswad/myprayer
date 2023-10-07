@@ -6,7 +6,7 @@ from datetime import datetime
 
 import inquirer
 import typer
-from rich import print
+from rich import print as rprint
 from rich.prompt import Prompt
 
 from myprayer import utils
@@ -118,7 +118,7 @@ def list_prayers(
     )
 
     if not city or not country:
-        print(
+        rprint(
             "[red]Please provide a city and country, or run config to set the defaults.[/red]"
         )
         raise typer.Exit(1)
@@ -228,20 +228,20 @@ def config():
     )
     CONFIG.save(CONFIG_FILE)
 
-    print(f"[green]✔[/green] Configuration saved to {CONFIG_FILE}.")
+    rprint(f"[green]✔[/green] Configuration saved to {CONFIG_FILE}.")
 
 
-@app.command(name="waybar")
+@app.command(name="waybar", help="Print prayer times in json waybar format.")
 def waybar():
     """Print prayer times in waybar format."""
     CONFIG.update(out_type=OutType.pretty)
     day_data = get_next_day(False)
 
     prayer_name, time_left = day_data.get_next()
-    formatted_time_left = utils.format_time_left(time_left.seconds, "{hours}h {minutes}m")  # type: ignore
+    formatted_time_left = utils.format_time_left(time_left.seconds, "{hours}H {minutes}M")  # type: ignore
 
     json_output = {
-        "text": formatted_time_left,
+        "text": f"{formatted_time_left}",
         "tooltip": "\n".join(
             [
                 f"{prayer}: {time.strftime(TIME_FORMATS[CONFIG.time_format])}"
@@ -251,7 +251,6 @@ def waybar():
         ),
         "class": prayer_name.lower(),
         "alt": f"{prayer_name}: {formatted_time_left}",
-        "icon": WAYBAR_ICONS.get(prayer_name),
     }
 
     print(json.dumps(json_output))
