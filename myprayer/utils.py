@@ -1,21 +1,6 @@
 # Description: Utility functions
-import sys
-from io import StringIO
-
 from myprayer.constants import TIMEDELTA
 from myprayer.enums import OutType
-
-
-class Capturing(list):
-    def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = self._stringio = StringIO()
-        return self
-
-    def __exit__(self, *args):
-        self.extend(self._stringio.getvalue().splitlines())
-        del self._stringio  # free up some memory
-        sys.stdout = self._stdout
 
 
 def get_key(my_dict, target_value):
@@ -25,10 +10,10 @@ def get_key(my_dict, target_value):
 
 
 def format_time_left(seconds, out_type: OutType | str) -> str:
-    if isinstance(out_type, str):
-        format = out_type
-    else:
+    if isinstance(out_type, OutType):
         format = TIMEDELTA[out_type]
+    else:
+        format = out_type
 
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60

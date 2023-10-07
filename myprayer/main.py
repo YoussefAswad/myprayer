@@ -17,7 +17,6 @@ from myprayer.constants import (
     CONFIG_FILE,
     PRAYER_NAMES,
     TIME_FORMATS,
-    WAYBAR_ICONS,
 )
 from myprayer.day import Day
 from myprayer.enums import OutType, TimeFormat
@@ -127,7 +126,7 @@ def list_prayers(
         day_data = get_next_day(force)
 
     else:
-        config.next = False
+        CONFIG.next = False
         day_data = Month(CONFIG, force).get_day()
 
     day_data.out()

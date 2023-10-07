@@ -74,7 +74,8 @@ class Day:
 
     def is_next(self, prayer: str) -> bool:
         if (
-            self.is_today
+            self.config.next
+            and self.is_today
             and self.next_prayer
             and prayer == self.next_prayer
             and self.time_for_next is not None
