@@ -6,7 +6,7 @@ import typer
 from rich import print
 
 from myprayer.config import Config
-from myprayer.constants import CACHE_DIR, FILE_FORMAT
+from myprayer.constants import CACHE_DIR, FILE_FORMAT, URL
 from myprayer.day import Day
 
 
@@ -41,7 +41,7 @@ class Month:
         return Day(self.config, self.data, day)
 
     def fetch(self) -> dict:
-        url = f"http://api.aladhan.com/v1/calendarByCity/{self.config.year}/{self.config.month}"
+        url = f"{URL}{self.config.year}/{self.config.month}"
         params = {
             "city": self.config.city,
             "country": self.config.country,

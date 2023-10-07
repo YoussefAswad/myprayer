@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import json
+from calendar import monthrange
+from datetime import datetime
+
 import inquirer
 import typer
 from rich import print
@@ -7,7 +11,15 @@ from rich.prompt import Prompt
 
 from myprayer import utils
 from myprayer.config import Config
-from myprayer.constants import APP_NAME, CALCULATION_METHODS, CONFIG_FILE, PRAYER_NAMES
+from myprayer.constants import (
+    APP_NAME,
+    CALCULATION_METHODS,
+    CONFIG_FILE,
+    PRAYER_NAMES,
+    TIME_FORMATS,
+    WAYBAR_ICONS,
+)
+from myprayer.day import Day
 from myprayer.enums import OutType, TimeFormat
 from myprayer.month import Month
 
@@ -18,12 +30,33 @@ app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False)
 CONFIG = Config(CONFIG_FILE)
 
 
+# get the day for the next prayer
+def get_next_day(force: bool) -> Day:
+    day_data = Month(CONFIG, force).get_day()
+    if day_data.has_passed(CONFIG.prayers[-1]):
+        # if the next prayer is in the next day, get the next day
+        if CONFIG.day in range(1, monthrange(CONFIG.year, CONFIG.month)[1] + 1):
+            CONFIG.day += 1
+            day_data = Month(CONFIG, force).get_day()
+        # if the next prayer is in the next month, get the next month
+        else:
+            CONFIG.day = 1
+            # if the next prayer is in the next year, get the next year
+            if CONFIG.month == 12:
+                CONFIG.month = 1
+                CONFIG.year += 1
+            else:
+                CONFIG.month += 1
+            day_data = Month(CONFIG, force).get_day()
+    return day_data
+
+
 @app.command(name="list", help="List prayer times.")
 def list_prayers(
     city: str = typer.Argument(CONFIG.city, help="City name."),
     country: str = typer.Argument(CONFIG.country, help="Country name."),
     day: int = typer.Option(
-        CONFIG.day,
+        None,
         "--day",
         "-d",
         min=1,
@@ -32,7 +65,7 @@ def list_prayers(
         show_default="Current day",  # type: ignore
     ),
     month: int = typer.Option(
-        CONFIG.month,
+        None,
         "--month",
         "-m",
         min=1,
@@ -41,7 +74,7 @@ def list_prayers(
         show_default="Current month",  # type: ignore
     ),
     year: int = typer.Option(
-        CONFIG.year,
+        None,
         "--year",
         "-y",
         help="Year",
@@ -63,16 +96,21 @@ def list_prayers(
         "-o",
         help="Output type.",
     ),
-    next: bool = typer.Option(CONFIG.next, "--next", "-n", help="Show next prayer."),
+    next: bool = typer.Option(
+        CONFIG.next,
+        "--next",
+        "-n",
+        help="Show next prayer, has no effect if day, month, or year are given.",
+    ),
     force: bool = typer.Option(False, "--force", "-f", help="Force update cache."),
 ):
     # Update config with command line arguments
     CONFIG.update(
         city=city,
         country=country,
-        day=day,
-        month=month,
-        year=year,
+        day=day or datetime.now().day,
+        month=month or datetime.now().month,
+        year=year or datetime.now().year,
         time_format=time_format,
         method=method,
         out_type=out_type,
@@ -85,7 +123,13 @@ def list_prayers(
         )
         raise typer.Exit(1)
 
-    day_data = Month(CONFIG, force).get_day()
+    if not day and not month and not year:
+        day_data = get_next_day(force)
+
+    else:
+        config.next = False
+        day_data = Month(CONFIG, force).get_day()
+
     day_data.out()
 
 
@@ -109,7 +153,6 @@ def next(
         "-o",
         help="Output type.",
     ),
-    next: bool = typer.Option(CONFIG.next, "--next", "-n", help="Show next prayer."),
     force: bool = typer.Option(False, "--force", "-f", help="Force update cache."),
 ):
     # Update config with command line arguments
@@ -119,9 +162,9 @@ def next(
         time_format=time_format,
         method=method,
         out_type=out_type,
-        next=next,
     )
-    day_data = Month(CONFIG, force).get_day()
+
+    day_data = get_next_day(force)
     day_data.out_next()
 
 
@@ -188,19 +231,30 @@ def config():
     print(f"[green]✔[/green] Configuration saved to {CONFIG_FILE}.")
 
 
-# @app.command(name="show-config", help="Show current configuration.")
-# def load_config() -> Config:
-#     with open(CONFIG_FILE, "r") as f:
-#         data = json.load(f)
-#     config = Config(
-#         data["city"],
-#         data["country"],
-#         TimeFormat(data["time_format"]),
-#         PrintType(data["print_type"]),
-#         data["method"],
-#         data["next"],
-#     )
-#     return config
+@app.command(name="waybar")
+def waybar():
+    """Print prayer times in waybar format."""
+    CONFIG.update(out_type=OutType.pretty)
+    day_data = get_next_day(False)
+
+    prayer_name, time_left = day_data.get_next()
+    formatted_time_left = utils.format_time_left(time_left.seconds, "{hours}h {minutes}m")  # type: ignore
+
+    json_output = {
+        "text": formatted_time_left,
+        "tooltip": "\n".join(
+            [
+                f"{prayer}: {time.strftime(TIME_FORMATS[CONFIG.time_format])}"
+                for prayer, time in day_data.timings.items()
+                if prayer in CONFIG.prayers
+            ]
+        ),
+        "class": prayer_name.lower(),
+        "alt": f"{prayer_name}: {formatted_time_left}",
+        "icon": WAYBAR_ICONS.get(prayer_name),
+    }
+
+    print(json.dumps(json_output))
 
 
 if __name__ == "__main__":

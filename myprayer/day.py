@@ -67,6 +67,11 @@ class Day:
         return "", None
         # self.timings["Fajr"] - now + timedelta(days=1)
 
+    def has_passed(self, prayer: str) -> bool:
+        if (prayer in self.timings) and (self.timings[prayer] < datetime.now()):
+            return True
+        return False
+
     def is_next(self, prayer: str) -> bool:
         if (
             self.is_today

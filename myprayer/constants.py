@@ -78,3 +78,15 @@ TIMEDELTA = {
     OutType.table: " ({hours}H {minutes}M)",
     OutType.json: "{hours}H {minutes}M",
 }
+
+# Prayer times API URL
+URL = "http://api.aladhan.com/v1/calendarByCity/"
+
+# Waybar icons
+WAYBAR_ICONS = {
+    "Fajr": "󰖜",
+    "Dhuhr": "󰖙",
+    "Asr": "󰼰",
+    "Maghrib": "󰖛",
+    "Isha": "󰖔",
+}
