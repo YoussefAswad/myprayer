@@ -20,7 +20,6 @@ class Day:
     day: int
     date: datetime
     timings: dict[str, datetime]
-    is_today: bool
     next_prayer: str
     time_for_next: Optional[timedelta]
 
@@ -29,7 +28,7 @@ class Day:
         self.data: dict = data
 
         if not day:
-            self.day = config.day
+            self.day = config.date.day
         else:
             self.day = day
 
@@ -37,23 +36,36 @@ class Day:
         try:
             day_data = self.data[self.day - 1]
         except IndexError:
-            print(f"{month_name[self.config.month]} is {len(self.data)} days.")
+            print(f"{month_name[self.config.date.month]} is {len(self.data)} days.")
             raise typer.Exit(1)
 
         self.timings: dict[str, datetime] = {}
         timings = day_data["timings"]
-        for prayer, time in timings.items():
-            if prayer in config.prayers:
-                self.timings[prayer] = datetime.strptime(
-                    time[:5], TIME_FORMATS[TimeFormat.twenty_four]
-                ).replace(day=self.day, month=self.config.month, year=self.config.year)
 
         self.date: datetime = datetime.strptime(
             (day_data["date"]["readable"]), "%d %b %Y"
-        )
+        ).replace(hour=0, minute=0, second=0, microsecond=0)
 
-        self.is_today: bool = datetime.today().date() == self.date.date()
-        if self.is_today:
+        day_passed = False
+        last_prayer = None
+        for prayer, time in timings.items():
+            if prayer in config.prayers:
+                prayer_time = datetime.strptime(
+                    time[:5], TIME_FORMATS[TimeFormat.twenty_four]
+                ).replace(
+                    day=self.day,
+                    month=self.config.date.month,
+                    year=self.config.date.year,
+                )
+                if last_prayer and (prayer_time - last_prayer).total_seconds() < 0:
+                    day_passed = True
+
+                if day_passed:
+                    prayer_time += timedelta(days=1)
+                self.timings[prayer] = prayer_time
+                last_prayer = prayer_time
+
+        if self.config.next:
             self.next_prayer, self.time_for_next = self.get_next()
         else:
             self.next_prayer: str = ""
@@ -69,13 +81,14 @@ class Day:
 
     def has_passed(self, prayer: str) -> bool:
         if (prayer in self.timings) and (self.timings[prayer] < datetime.now()):
+            print(f"{prayer} has passed.")
+            print(self.timings[prayer])
             return True
         return False
 
     def is_next(self, prayer: str) -> bool:
         if (
             self.config.next
-            and self.is_today
             and self.next_prayer
             and prayer == self.next_prayer
             and self.time_for_next is not None
@@ -144,7 +157,7 @@ class Day:
         }
         out_json["timings"] = timings
 
-        if self.is_today:
+        if self.config.next and self.next_prayer and self.time_for_next is not None:
             time_left = utils.format_time_left(
                 self.time_for_next.seconds, self.config.out_type  # type: ignore
             )
@@ -154,7 +167,7 @@ class Day:
         print(json.dumps(out_json, indent=4))
 
     def out_next(self):
-        if self.is_today:
+        if self.next_prayer and self.time_for_next is not None:
             time_left = utils.format_time_left(self.time_for_next.seconds, self.config.out_type)  # type: ignore
             match self.config.out_type:
                 case OutType.pretty:
@@ -163,6 +176,7 @@ class Day:
                 case OutType.machine:
                     print(f"{self.next_prayer},{time_left}")
                 case OutType.table:
+                    time_left = utils.format_time_left(self.time_for_next.seconds, "{hours}H {minutes}M")  # type: ignore
                     console = Console()
                     table = Table(show_header=True, header_style="bold magenta")
                     table.add_column("Prayer")

@@ -6,6 +6,9 @@ from pathlib import Path
 from myprayer.enums import OutType, TimeFormat
 
 APP_NAME = "myprayer"
+# Prayer times API URL
+
+URL = "http://api.aladhan.com/v1/calendarByCity/"
 
 # Find config/cache dir based on OS
 if str(os.name) == "nt":
@@ -33,20 +36,17 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 FILE_FORMAT = "{country}_{city}_{month}_{year}_{method}.json"
 
 # Create list for prayer names
-PRAYER_NAMES = [
+PRAYERS = [
     "Fajr",
     "Sunrise",
     "Dhuhr",
     "Asr",
     "Maghrib",
     "Isha",
-    "Imsak",
     "Midnight",
-    "Firstthird",
-    "Lastthird",
 ]
 
-DEFAULT_PRAYER_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+DEFAULT_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
 # Create dict for calculation methods
 CALCULATION_METHODS = {
@@ -79,8 +79,6 @@ TIMEDELTA = {
     OutType.json: "{hours}H {minutes}M",
 }
 
-# Prayer times API URL
-URL = "http://api.aladhan.com/v1/calendarByCity/"
 
 # Waybar icons
 WAYBAR_ICONS = {

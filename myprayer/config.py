@@ -3,21 +3,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from myprayer.constants import DEFAULT_PRAYERS
 from myprayer.enums import OutType, TimeFormat
 
 
 # Create dataclass for config that has default values and can be loaded from file
 class Config:
-    day: int = datetime.today().day
-    month: int = datetime.today().month
-    year: int = datetime.today().year
+    date: datetime = datetime.today()
     city: str = ""
     country: str = ""
     time_format: TimeFormat = TimeFormat.twelve
     out_type: OutType = OutType.table
     method: int = 5
     next: bool = True
-    prayers: list[str] = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+    prayers: list[str] = DEFAULT_PRAYERS
 
     def __init__(
         self,
@@ -33,6 +32,7 @@ class Config:
             self.out_type = OutType(data["print_type"])
             self.method = data["method"]
             self.next = data["next"]
+            self.prayers = data["prayers"]
 
     def update(
         self,
@@ -48,11 +48,11 @@ class Config:
         prayers: Optional[list[str]] = None,
     ):
         if day is not None:
-            self.day = day
+            self.date = self.date.replace(day=day)
         if month is not None:
-            self.month = month
+            self.date = self.date.replace(month=month)
         if year is not None:
-            self.year = year
+            self.date = self.date.replace(year=year)
         if city is not None:
             self.city = city
         if country is not None:
@@ -69,6 +69,8 @@ class Config:
             self.prayers = prayers
 
     def save(self, config_file: Path):
+        if not config_file.parent.exists():
+            config_file.parent.mkdir(parents=True, exist_ok=True)
         with open(config_file, "w") as f:
             json.dump(
                 {
@@ -78,6 +80,7 @@ class Config:
                     "print_type": self.out_type.value,
                     "method": self.method,
                     "next": self.next,
+                    "prayers": self.prayers,
                 },
                 f,
                 indent=4,

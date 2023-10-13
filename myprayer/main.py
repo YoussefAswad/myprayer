@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-from calendar import monthrange
 from datetime import datetime
 
 import inquirer
@@ -15,10 +14,9 @@ from myprayer.constants import (
     APP_NAME,
     CALCULATION_METHODS,
     CONFIG_FILE,
-    PRAYER_NAMES,
+    PRAYERS,
     TIME_FORMATS,
 )
-from myprayer.day import Day
 from myprayer.enums import OutType, TimeFormat
 from myprayer.month import Month
 
@@ -27,27 +25,6 @@ app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False)
 
 # Load config
 CONFIG = Config(CONFIG_FILE)
-
-
-# get the day for the next prayer
-def get_next_day(force: bool) -> Day:
-    day_data = Month(CONFIG, force).get_day()
-    if day_data.has_passed(CONFIG.prayers[-1]):
-        # if the next prayer is in the next day, get the next day
-        if CONFIG.day in range(1, monthrange(CONFIG.year, CONFIG.month)[1] + 1):
-            CONFIG.day += 1
-            day_data = Month(CONFIG, force).get_day()
-        # if the next prayer is in the next month, get the next month
-        else:
-            CONFIG.day = 1
-            # if the next prayer is in the next year, get the next year
-            if CONFIG.month == 12:
-                CONFIG.month = 1
-                CONFIG.year += 1
-            else:
-                CONFIG.month += 1
-            day_data = Month(CONFIG, force).get_day()
-    return day_data
 
 
 @app.command(name="list", help="List prayer times.")
@@ -96,7 +73,7 @@ def list_prayers(
         help="Output type.",
     ),
     next: bool = typer.Option(
-        CONFIG.next,
+        None,
         "--next",
         "-n",
         help="Show next prayer, has no effect if day, month, or year are given.",
@@ -116,6 +93,7 @@ def list_prayers(
         next=next,
     )
 
+    month_ = Month(CONFIG, force)
     if not city or not country:
         rprint(
             "[red]Please provide a city and country, or run config to set the defaults.[/red]"
@@ -123,11 +101,11 @@ def list_prayers(
         raise typer.Exit(1)
 
     if not day and not month and not year:
-        day_data = get_next_day(force)
+        day_data = month_.get_next_day()
 
     else:
         CONFIG.next = False
-        day_data = Month(CONFIG, force).get_day()
+        day_data = month_.get_day()
 
     day_data.out()
 
@@ -161,19 +139,28 @@ def next(
         time_format=time_format,
         method=method,
         out_type=out_type,
+        next=True,
     )
 
-    day_data = get_next_day(force)
+    day_data = Month(CONFIG, force).get_next_day()
     day_data.out_next()
 
 
 @app.command(name="config", help="Configure myprayer.")
 def config():
     # Prompt for city
-    city: str = Prompt.ask("City")
+    city: str = Prompt.ask(
+        "City",
+        default=CONFIG.city,
+        show_default=True if CONFIG.city else False,
+    )
 
     # Prompt for country
-    country: str = Prompt.ask("Country")
+    country: str = Prompt.ask(
+        "Country",
+        default=CONFIG.country,
+        show_default=True if CONFIG.country else False,
+    )
 
     # Prompt for calculation method
     method_question = [
@@ -181,6 +168,7 @@ def config():
             "method",
             message="Select a calculation method:",
             choices=CALCULATION_METHODS,
+            default=utils.get_key(CALCULATION_METHODS, CONFIG.method),  # type: ignore
         ),
     ]
     method_choice = inquirer.prompt(method_question)
@@ -195,7 +183,7 @@ def config():
 
     # Prompt for print type
     print_type: str = Prompt.ask(
-        "Print type",
+        "Output type",
         choices=[OutType.pretty, OutType.machine, OutType.table],
         default=OutType.table,
     )
@@ -206,7 +194,7 @@ def config():
         inquirer.Checkbox(
             "prayers",
             message="Select prayers to show:",
-            choices=PRAYER_NAMES,
+            choices=PRAYERS,
             default=CONFIG.prayers,
         ),
     ]
@@ -234,7 +222,7 @@ def config():
 def waybar():
     """Print prayer times in waybar format."""
     CONFIG.update(out_type=OutType.pretty)
-    day_data = get_next_day(False)
+    day_data = Month(CONFIG, False).get_next_day()
 
     prayer_name, time_left = day_data.get_next()
     formatted_time_left = utils.format_time_left(time_left.seconds, "{hours}H {minutes}M")  # type: ignore
