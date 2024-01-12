@@ -2,41 +2,49 @@
 
 import os
 from pathlib import Path
+from typing import Dict, Final, List
 
-from myprayer.enums import OutType, TimeFormat
+from myprayer.cli.enums import NextOutType, OutType, TimeFormat
 
-APP_NAME = "myprayer"
+APP_NAME: Final[str] = "myprayer"
 # Prayer times API URL
 
-URL = "http://api.aladhan.com/v1/calendarByCity/"
+LOCATION_TYPES: Final[List[str]] = ["City", "Coordinates", "Address"]
 
 # Find config/cache dir based on OS
 if str(os.name) == "nt":
-    CACHE_DIR = (
+    cache_dir = (
         Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / APP_NAME
     )
-    CONFIG_DIR = (
+    config_dir = (
         Path(os.environ.get("APPDATA") or Path.home() / "AppData/Roaming") / APP_NAME
     )
 else:
-    CACHE_DIR = (
+    cache_dir = (
         Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / APP_NAME
     )
-    CONFIG_DIR = (
+    config_dir = (
         Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / APP_NAME
     )
 
-# config file path
-CONFIG_FILE = CONFIG_DIR / "config.json"
+# cache dir path
+CACHE_DIR: Final[Path] = cache_dir
 
 # Create cache dir if it doesn't exist
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+# config dir path
+CONFIG_DIR: Final[Path] = config_dir
+
+# config file path
+CONFIG_FILE: Final[Path] = CONFIG_DIR / "config.json"
+
+
 # File format for cache files
-FILE_FORMAT = "{country}_{city}_{month}_{year}_{method}.json"
+FILE_FORMAT: Final[str] = "{country}_{city}_{month}_{year}_{method}.json"
 
 # Create list for prayer names
-PRAYERS = [
+PRAYERS: Final[List[str]] = [
     "Fajr",
     "Sunrise",
     "Dhuhr",
@@ -46,10 +54,10 @@ PRAYERS = [
     "Midnight",
 ]
 
-DEFAULT_PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+DEFAULT_PRAYERS: Final[List[str]] = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 
 # Create dict for calculation methods
-CALCULATION_METHODS = {
+CALCULATION_METHODS: Final[Dict[str, int]] = {
     "University of Islamic Sciences, Karachi": 1,
     "Islamic Society of North America": 2,
     "Muslim World League": 3,
@@ -65,18 +73,19 @@ CALCULATION_METHODS = {
     "Spiritual Administration of Muslims of Russia": 14,
 }
 
-# Create dict for time formats (strftime/strptime)
-TIME_FORMATS = {
+# dict for time formats (strftime/strptime)
+TIME_FORMATS: Final[Dict[TimeFormat, str]] = {
     TimeFormat.twelve: "%I:%M %p",
     TimeFormat.twenty_four: "%H:%M",
 }
 
-# Create dict for timedelta
-TIMEDELTA = {
-    OutType.pretty: " ({hours}H {minutes}M)",
+# dict for timedelta
+TIMEDELTA: Final[Dict[OutType | NextOutType, str]] = {
+    OutType.pretty: "{hours}H {minutes}M",
     OutType.machine: "{hours:02d}H{minutes:02d}M",
-    OutType.table: " ({hours}H {minutes}M)",
+    OutType.table: "{hours}H {minutes}M",
     OutType.json: "{hours}H {minutes}M",
+    NextOutType.waybar: "{hours}H {minutes}M",
 }
 
 

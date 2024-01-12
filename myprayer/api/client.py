@@ -8,28 +8,62 @@ import requests
 from myprayer.api.day import Day
 from myprayer.api.exceptions import *
 from myprayer.api.location_types import Address, City, Coordinates
+from myprayer.api.method import Method
 from myprayer.api.month import Month
 from myprayer.api.prayer import Prayer
 
+
 API = "http://api.aladhan.com/v1/"
-FILE_FORMAT = "{month}_{year}_{method}.json"
 SKIP = ["Firstthird", "Lastthird", "Imsak", "Sunset"]
 
 
 class Client:
+    """
+    Client for accessing the Aladhan prayer times API.
+
+    Attributes:
+        location: The location to get prayer times for. Can be a City,
+            Coordinates, or Address object.
+        method: The calculation method to use. Optional, defaults to auto.
+        skip: Prayers to skip from the results. e.g. ["Sunrise", "Sunset"]. Optional.
+        cache_dir: Optional directory to cache API responses.
+
+    Methods:
+        get_today: Get prayer times for today.
+        get_next_prayers: Get prayer times for the next prayer after the
+            current time.
+        get_methods: Get list of available calculation methods.
+        get_day: Get prayer times for a specific day.
+        get_month: Get prayer times for a whole month.
+
+    The Client handles querying the API, caching responses, and raising
+    any API errors.
+    """
+
+    location: City | Coordinates | Address
+    method: Optional[int]
+    skip: list[str]
+    cache_dir: Optional[Path]
+
     def __init__(
         self,
         location: City | Coordinates | Address,
-        method: int = 3,
+        method: Optional[int | Method] = None,
         skip: list[str] = [],
-        cache_dir: Optional[Path] = None,
+        cache_dir: Optional[Path | str] = None,
     ) -> None:
         self.location = location
-        self.method = method
+        if isinstance(method, Method):
+            self.method = method.id
+        else:
+            self.method = method
         self.skip = skip + SKIP
-        self.cache_dir = cache_dir
 
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        if cache_dir is not None:
+            self.cache_dir = (
+                Path(cache_dir) if isinstance(cache_dir, str) else cache_dir
+            )
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def __set_location_params(params: dict, location: City | Coordinates | Address):
@@ -67,15 +101,32 @@ class Client:
     # TODO: add support for different methods
     @staticmethod
     def __get_cache_file_name(
-        month: int, year: int, location: City | Coordinates | Address, method: int
+        month: int,
+        year: int,
+        location: City | Coordinates | Address,
+        method: Optional[int] = None,
     ):
+        if method is None:
+            method = "auto"  # type: ignore
         suffix = f"{month}_{year}_{method}.json"
         if isinstance(location, Coordinates):
             return f"coordinates_{location.longitude}_{location.latitude}_{suffix}"
         if isinstance(location, Address):
             return f"address_{location.url_encoded()}_{suffix}"
         if isinstance(location, City):
-            return f"city_{location.city}_{location.country}_{suffix}"
+            return f"city_{location.city.replace(' ','')}_{location.country.replace(' ', '')}_{suffix}"
+
+    @staticmethod
+    def get_methods() -> list[Method]:
+        ENDPOINT = "methods"
+        response = requests.get(API + ENDPOINT)
+        data = response.json()
+        Client.__detect_exceptions(response, data)
+        methods = [
+            Method(method) for method in data["data"].values() if method["id"] != 99
+        ]
+        methods.sort(key=lambda method: method.id)
+        return methods
 
     def get_today(self) -> Day:
         today = datetime.today()
@@ -128,10 +179,12 @@ class Client:
     def fetch(self, month: int, year: int) -> dict:
         # define parameters
         params = {
-            "method": self.method,
             "month": month,
             "year": year,
         }
+        # check if a method was provided
+        if self.method is not None:
+            params["method"] = self.method
 
         if self.location is None:
             raise ValueError("No location was provided.")
@@ -172,14 +225,22 @@ class Client:
 
 if __name__ == "__main__":
     client = Client(
-        Address("51 Helmy Hasan Ali, Cairo, Egypt"), 5, cache_dir=Path("cache")
+        City("London", "United Kingdom"),
+        cache_dir=Path("cache"),
     )
-    print(Address("51 Helmy Hasan Ali, Cairo, Egypt").url_encoded())
     for prayer in client.get_next_prayers().prayers:
-        print(prayer.name, prayer.time)
-    client = Client(City("Cairo", "Egypt"), 5, cache_dir=Path("cache"))
+        print(prayer)
+    print()
+    method = Client.get_methods()[5]
+    client = Client(
+        City("Cairo", "Egypt"),
+        skip=["Sunrise", "Sunset"],
+        cache_dir=Path("cache"),
+        method=method,
+    )
     for prayer in client.get_next_prayers().prayers:
-        print(prayer.name, prayer.time)
-    client = Client(Coordinates(30.0444, 31.2357), 5, cache_dir=Path("cache"))
-    for prayer in client.get_next_prayers().prayers:
-        print(prayer.name, prayer.time)
+        print(prayer)
+
+    jan = client.get_month(1, 2022)
+    day = jan.get_day(15)
+    print(day.get_prayer("Fajr").__str__())

@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "myprayer"
-version = "1.0.0"
+version = "2.0.2"
 description = "A CLI tool to get prayer times"
 authors = ["YoussefAswad <85849220+YoussefAswad@users.noreply.github.com>"]
 readme = "README.md"
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8"
 typer = "^0.9.0"
 rich = "^13.6.0"
 requests = "^2.31.0"
@@ -20,4 +20,4 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.scripts]
-myprayer = "myprayer.main:app"
+myprayer = "myprayer.cli.main:app"

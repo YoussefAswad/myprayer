@@ -11,6 +11,14 @@ class OutType(StrEnum):
     json = "json"
 
 
+class NextOutType(StrEnum):
+    pretty = "pretty"
+    machine = "machine"
+    table = "table"
+    json = "json"
+    waybar = "waybar"
+
+
 # Create enum for time format
 class TimeFormat(StrEnum):
     twelve = "12"

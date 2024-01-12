@@ -4,6 +4,33 @@ from myprayer.api.prayer import Prayer
 
 
 class Day:
+    """Represents a single day with prayer times.
+
+    Attributes:
+        day (int): The day number in the month
+        month (int): The month number 1-12
+        year (int): The year
+        data (dict): The prayer time data for this day
+        prayers (list[Prayer]): List of Prayer objects
+        skip (list[str]): Prayer names to skip
+
+    Methods:
+        get_next_prayer(): Returns the next prayer that has not passed yet
+        get_prayer(name): Returns the Prayer object with the given name
+        has_passed(): Checks if the last prayer of the day has passed
+
+    Raises:
+        ValueError: If day is not 1-31 or month is not 1-12
+
+    Examples:
+        >>> data = Client().get_day(15, 1, 2022)
+        >>> print(day.prayers[0].name)
+        Fajr
+
+        >>> day.get_prayer("fajr").__str__()
+        Fajr: 05:20
+    """
+
     day: int
     month: int
     year: int
@@ -22,6 +49,7 @@ class Day:
         self.day: int = day
         self.month: int = month
         self.year: int = year
+        self.date: datetime = datetime(year, month, day)
         self.prayers: list[Prayer] = []
         self.skip: list[str] = skip
 
