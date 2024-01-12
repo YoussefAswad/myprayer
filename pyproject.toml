@@ -2,8 +2,9 @@
 name = "myprayer"
 version = "2.0.3"
 description = "A CLI tool to get prayer times"
-authors = ["YoussefAswad <85849220+YoussefAswad@users.noreply.github.com>"]
+authors = ["Youssef Aswad <youssefaswad@gmail.com>"]
 readme = "README.md"
+repository = "https://github.com/YoussefAswad/myprayer"
 license = "MIT"
 
 [tool.poetry.dependencies]
