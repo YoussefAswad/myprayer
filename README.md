@@ -1,5 +1,7 @@
 # MyPrayer
 
+[![PyPI version](https://badge.fury.io/py/myprayer.svg)](https://badge.fury.io/py/myprayer)
+
 MyPrayer is a command line application for getting Islamic prayer times for a given location and date.
 
 ## Features
@@ -17,6 +19,13 @@ MyPrayer is a command line application for getting Islamic prayer times for a gi
 - [Inquirer.py](https://github.com/magmax/python-inquirer) - user prompts
 - [Rich](https://github.com/willmcgugan/rich) - output formatting
 - [Requests](https://docs.python-requests.org/en/latest/) - HTTP client
+
+### Install
+
+```bash
+pip install myprayer
+```
+
 
 ## Usage
 
