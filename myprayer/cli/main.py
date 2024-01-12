@@ -158,15 +158,14 @@ def list_prayers(
 
     output = DayOutput(day_data, time_format, next)
 
-    match out_type:
-        case OutType.table:
-            rprint(output.table())
-        case OutType.pretty:
-            rprint(output.pretty())
-        case OutType.machine:
-            print(output.machine())
-        case OutType.json:
-            print(json.dumps(output.json(), indent=4))
+    if out_type == OutType.table:
+        rprint(output.table())
+    elif out_type == OutType.pretty:
+        rprint(output.pretty())
+    elif out_type == OutType.machine:
+        print(output.machine())
+    elif out_type == OutType.json:
+        print(json.dumps(output.json(), indent=4))
 
 
 @app.command(name="next", help="Show next prayer.")
@@ -227,45 +226,44 @@ def next(
 
     if next_prayer is not None:
         time_left = format_time_left(next_prayer.time_left(), out_type)  # type: ignore
-        match out_type:
-            case OutType.table:
-                table = Table(show_header=True, header_style="bold magenta")
-                table.add_column("Prayer")
-                table.add_column("Time Left")
-                table.add_row(next_prayer.name, time_left, style="bold")
-                rprint(table)
-            case OutType.pretty:
-                rprint(f"[bold cyan]{next_prayer.name}:[/bold cyan] {time_left}")
-            case OutType.machine:
-                print(f"{next_prayer.name},{time_left}")
-            case OutType.json:
-                out_json = {
-                    "next": next_prayer.name,
-                    "time_left": time_left,
-                }
-                print(json.dumps(out_json, indent=4))
-            case NextOutType.waybar:
-                day_data = client.get_day(
-                    next_prayer.time.day, next_prayer.time.month, next_prayer.time.year
-                )
+        if out_type == OutType.table:
+            table = Table(show_header=True, header_style="bold magenta")
+            table.add_column("Prayer")
+            table.add_column("Time Left")
+            table.add_row(next_prayer.name, time_left, style="bold")
+            rprint(table)
+        elif out_type == OutType.pretty:
+            rprint(f"[bold cyan]{next_prayer.name}:[/bold cyan] {time_left}")
+        elif out_type == OutType.machine:
+            print(f"{next_prayer.name},{time_left}")
+        elif out_type == OutType.json:
+            out_json = {
+                "next": next_prayer.name,
+                "time_left": time_left,
+            }
+            print(json.dumps(out_json, indent=4))
+        elif out_type == NextOutType.waybar:
+            day_data = client.get_day(
+                next_prayer.time.day, next_prayer.time.month, next_prayer.time.year
+            )
 
-                tooltip_date = day_data.date.strftime("%A, %B %d")
-                tooltip_data = "\n".join(
-                    [
-                        f"{prayer.name}: {prayer.time.strftime(TIME_FORMATS[CONFIG.time_format])}"
-                        for prayer in day_data.prayers
-                    ]
-                )
-                tooltip = f"{tooltip_date}\n\n{tooltip_data}"
+            tooltip_date = day_data.date.strftime("%A, %B %d")
+            tooltip_data = "\n".join(
+                [
+                    f"{prayer.name}: {prayer.time.strftime(TIME_FORMATS[CONFIG.time_format])}"
+                    for prayer in day_data.prayers
+                ]
+            )
+            tooltip = f"{tooltip_date}\n\n{tooltip_data}"
 
-                out_json = {
-                    "text": f"{time_left}",
-                    "tooltip": tooltip,
-                    "class": next_prayer.name.lower(),
-                    "alt": f"{next_prayer.name}: {time_left}",
-                }
+            out_json = {
+                "text": f"{time_left}",
+                "tooltip": tooltip,
+                "class": next_prayer.name.lower(),
+                "alt": f"{next_prayer.name}: {time_left}",
+            }
 
-                print(json.dumps(out_json, indent=4))
+            print(json.dumps(out_json, indent=4))
 
 
 @app.command(name="config", help="Configure myprayer.")

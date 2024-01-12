@@ -24,24 +24,22 @@ class Config:
             with open(config_file, "r") as f:
                 data = json.load(f)
 
-            match data["location"]["type"]:
-                case "city":
-                    self.location = City(
-                        data["location"]["city"],
-                        data["location"]["country"],
-                        data["location"]["state"]
-                        if "state" in data["location"]
-                        else None,
-                    )
-                case "coordinates":
-                    self.location = Coordinates(
-                        data["location"]["latitude"],
-                        data["location"]["longitude"],
-                    )
-                case "address":
-                    self.location = Address(
-                        data["location"]["address"],
-                    )
+            location_type: str = data["location"]["type"]
+            if location_type == "city":
+                self.location = City(
+                    data["location"]["city"],
+                    data["location"]["country"],
+                    data["location"]["state"] if "state" in data["location"] else None,
+                )
+            elif location_type == "coordinates":
+                self.location = Coordinates(
+                    data["location"]["latitude"],
+                    data["location"]["longitude"],
+                )
+            elif location_type == "address":
+                self.location = Address(
+                    data["location"]["address"],
+                )
 
             self.time_format = TimeFormat(data["time_format"])
             self.out_type = OutType(data["print_type"])

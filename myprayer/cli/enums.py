@@ -1,17 +1,17 @@
 # Description: This file contains all the enums used in the project
 
-from enum import StrEnum
+from enum import Enum
 
 
 # Create enum for print type
-class OutType(StrEnum):
+class OutType(str, Enum):
     pretty = "pretty"
     machine = "machine"
     table = "table"
     json = "json"
 
 
-class NextOutType(StrEnum):
+class NextOutType(str, Enum):
     pretty = "pretty"
     machine = "machine"
     table = "table"
@@ -20,13 +20,13 @@ class NextOutType(StrEnum):
 
 
 # Create enum for time format
-class TimeFormat(StrEnum):
+class TimeFormat(str, Enum):
     twelve = "12"
     twenty_four = "24"
 
 
 # Create enum for prayer
-class Prayer(StrEnum):
+class Prayer(str, Enum):
     fajr = "Fajr"
     sunrise = "Sunrise"
     dhuhr = "Dhuhr"
