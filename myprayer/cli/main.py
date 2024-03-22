@@ -148,6 +148,10 @@ def list_prayers(
     ),
     force: bool = typer.Option(False, "--force", "-f", help="Force update cache."),
 ):
+    if CONFIG.is_error:
+        typer.echo(message=f"[ERROR] {CONFIG.error}", err=True)
+        exit(1)
+
     client = get_client(city, country, address, latitude, longitude, method, force)
 
     today = datetime.today()
@@ -220,6 +224,10 @@ def next(
     ),
     force: bool = typer.Option(False, "--force", "-f", help="Force update cache."),
 ):
+    if CONFIG.is_error:
+        typer.echo(message=f"[ERROR] {CONFIG.error}", err=True)
+        exit(1)
+
     client = get_client(city, country, address, latitude, longitude, method, force)
 
     next_prayer = client.get_next_prayer()
@@ -284,45 +292,49 @@ def config():
     if loc_type == "City":
         city: str = Prompt.ask(
             "City",
-            default=CONFIG.location.city
-            if isinstance(CONFIG.location, City)
-            else None,  # type: ignore
+            default=(
+                CONFIG.location.city if isinstance(CONFIG.location, City) else None
+            ),  # type: ignore
         )
         country: str = Prompt.ask(
             "Country",
-            default=CONFIG.location.country
-            if isinstance(CONFIG.location, City)
-            else None,  # type: ignore
+            default=(
+                CONFIG.location.country if isinstance(CONFIG.location, City) else None
+            ),  # type: ignore
         )
         state: str = Prompt.ask(
             "State",
-            default=CONFIG.location.state
-            if isinstance(CONFIG.location, City)
-            else None,  # type: ignore
+            default=None,  # type: ignore
         )
         location = City(city, country, state)
 
     elif loc_type == "Coordinates":
         latitude: float = FloatPrompt.ask(
             "Latitude",
-            default=CONFIG.location.latitude
-            if isinstance(CONFIG.location, Coordinates)
-            else None,  # type: ignore
+            default=(
+                CONFIG.location.latitude
+                if isinstance(CONFIG.location, Coordinates)
+                else None
+            ),  # type: ignore
         )
         longitude: float = FloatPrompt.ask(
             "Longitude",
-            default=CONFIG.location.longitude
-            if isinstance(CONFIG.location, Coordinates)
-            else None,  # type: ignore
+            default=(
+                CONFIG.location.longitude
+                if isinstance(CONFIG.location, Coordinates)
+                else None
+            ),  # type: ignore
         )
         location = Coordinates(latitude, longitude)
 
     elif loc_type == "Address":
         address: str = Prompt.ask(
             "Address",
-            default=CONFIG.location.address
-            if isinstance(CONFIG.location, Address)
-            else None,  # type: ignore
+            default=(
+                CONFIG.location.address
+                if isinstance(CONFIG.location, Address)
+                else None
+            ),  # type: ignore
         )
         location = Address(address)
 
@@ -355,14 +367,14 @@ def config():
     time_format: str = Prompt.ask(
         "Time format",
         choices=[TimeFormat.twelve, TimeFormat.twenty_four],
-        default=TimeFormat.twelve,
+        default=TimeFormat.twelve.value,
     )
 
     # Prompt for print type
     print_type: str = Prompt.ask(
         "Output type",
         choices=[OutType.pretty, OutType.machine, OutType.table],
-        default=OutType.table,
+        default=OutType.table.value,
     )
 
     # Prompt for prayers to show

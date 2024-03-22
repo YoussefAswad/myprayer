@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myprayer"
-version = "2.0.4"
+version = "2.0.5"
 description = "A CLI tool to get prayer times"
 authors = ["Youssef Aswad <youssefaswad@gmail.com>"]
 readme = "README.md"
@@ -13,6 +13,7 @@ typer = "^0.9.0"
 rich = "^13.6.0"
 requests = "^2.31.0"
 inquirer = "^3.1.3"
+pydantic = "^2.5.3"
 
 
 [build-system]

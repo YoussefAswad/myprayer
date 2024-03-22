@@ -1,10 +1,52 @@
 import json
+from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
+
+from pydantic import BaseModel, validator
 
 from myprayer.api.location_types import Address, City, Coordinates
-from myprayer.cli.constants import DEFAULT_PRAYERS
+from myprayer.cli.constants import CALCULATION_METHODS, DEFAULT_PRAYERS
 from myprayer.cli.enums import OutType, TimeFormat
+
+
+class LocationType(str, Enum):
+    city = "city"
+    coordinates = "coordinates"
+    address = "address"
+
+
+class CityModel(BaseModel):
+    type: Literal["city"]
+    city: str
+    country: str
+    state: Optional[str] = None
+
+
+class CoordinatesModel(BaseModel):
+    type: Literal["coordinates"]
+    latitude: float
+    longitude: float
+
+
+class AddressModel(BaseModel):
+    type: Literal["address"]
+    address: str
+
+
+class ConfigModel(BaseModel):
+    location: CityModel | CoordinatesModel | AddressModel
+    time_format: TimeFormat
+    print_type: OutType
+    method: int
+    show_next: bool
+    prayers: list[str]
+
+    @validator("method")
+    def method_is_valid(cls, v):
+        if v not in CALCULATION_METHODS.values():
+            raise ValueError(f"Invalid method: {v}")
+        return v
 
 
 # Create dataclass for config that has default values and can be loaded from file
@@ -15,14 +57,38 @@ class Config:
     method: int = 5
     next: bool = True
     prayers: list[str] = DEFAULT_PRAYERS
+    is_error: bool = False
+    error: Optional[str] = None
 
     def __init__(
         self,
         config_file: Path,
     ):
+        self.location = City("Cairo", "Egypt")
+        self.time_format = TimeFormat.twelve
+        self.out_type = OutType.table
+        self.method = 5
+        self.next = True
+        self.prayers = DEFAULT_PRAYERS
+        self.is_error = False
+        self.error = None
+
         if config_file.exists():
             with open(config_file, "r") as f:
-                data = json.load(f)
+                try:
+                    data = json.load(f)
+                except json.decoder.JSONDecodeError:
+                    self.is_error = True
+                    self.error = "Invalid config file"
+                    return
+
+            # Validate data
+            try:
+                ConfigModel(**data)
+            except Exception:
+                self.is_error = True
+                self.error = "Invalid config file structure"
+                return
 
             location_type: str = data["location"]["type"]
             if location_type == "city":
@@ -46,6 +112,9 @@ class Config:
             self.method = data["method"]
             self.next = data["show_next"]
             self.prayers = data["prayers"]
+        else:
+            self.is_error = True
+            self.error = "Config file not found, please run `myprayer config` to create one."
 
     def update(
         self,
