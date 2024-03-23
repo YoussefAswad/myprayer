@@ -94,7 +94,31 @@ Options
 
 ## Configuration
 
-Default settings like location, calculation method, and output format can be configured in `~/.myprayer/config.json` using `myprayer config`.
+Default settings like location, calculation method, and output format can be configured in `$XDG_CONFIG_HOME/myprayer/config.json` or `$HOME/.config/myprayer/config.json` using `myprayer config`.
+
+### Example configuration
+
+```jsonc
+{
+    "time_format": "12", // 12 or 24
+    "print_type": "table", // pretty, machine, table, json
+    "method": 5, // Calculation method
+    "show_next": true, // Highlight next prayer in list
+    "prayers": [ // Prayer to show
+        "Fajr",
+        "Dhuhr",
+        "Asr",
+        "Maghrib",
+        "Isha"
+    ],
+    "location": { // Default location used if no location is provided in command
+        "type": "city",
+        "city": "Cairo",
+        "country": "Egypt",
+        "state": null
+    }
+}
+```
 
 
 ## Credits
