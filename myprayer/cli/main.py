@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+__author__ = "Youssef Aswad"
+__version__ = "2.0.5"
+
 import json
 from datetime import datetime
 
@@ -26,8 +29,11 @@ from myprayer.cli.enums import NextOutType, OutType, TimeFormat
 from myprayer.cli.output import DayOutput
 from myprayer.cli.utils import format_time_left
 
+
 app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False, help="MyPrayer CLI.")
 
+
+# TODO: Add option to display date in output
 
 # Load config
 CONFIG = Config(CONFIG_FILE)
