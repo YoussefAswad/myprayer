@@ -34,6 +34,7 @@ app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False, help="MyPrayer 
 
 
 # TODO: Add option to display date in output
+# TODO: Emphasize next prayer in waybar output <span font_weight="bold">...</span>
 
 # Load config
 CONFIG = Config(CONFIG_FILE)

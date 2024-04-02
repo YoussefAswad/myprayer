@@ -108,7 +108,7 @@ class Client:
     ):
         if method is None:
             method = "auto"  # type: ignore
-        suffix = f"{month}_{year}_{method}.json"
+        suffix = f"{month:02}_{year}_{method:02}.json"
         if isinstance(location, Coordinates):
             return f"coordinates_{location.longitude}_{location.latitude}_{suffix}"
         if isinstance(location, Address):

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myprayer"
-version = "2.0.5"
+version = "2.0.6"
 description = "A CLI tool to get prayer times"
 authors = ["Youssef Aswad <youssefaswad@gmail.com>"]
 readme = "README.md"
