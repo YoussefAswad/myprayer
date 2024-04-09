@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 __author__ = "Youssef Aswad"
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 import json
 from datetime import datetime

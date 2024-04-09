@@ -19,6 +19,11 @@ MyPrayer is a command line application for getting Islamic prayer times for a gi
 - [Inquirer.py](https://github.com/magmax/python-inquirer) - user prompts
 - [Rich](https://github.com/willmcgugan/rich) - output formatting
 - [Requests](https://docs.python-requests.org/en/latest/) - HTTP client
+- [adhanpy](https://pypi.org/project/adhanpy/) - Prayer times calculation
+- [geopy](https://geopy.readthedocs.io/en/stable/) - Geocoding library
+- [tzlocal](https://pypi.org/project/tzlocal/) - Local timezone
+- [pydantic](https://pydantic-docs.helpmanual.io/) - Data validation
+
 
 ### Install
 
@@ -112,10 +117,8 @@ Default settings like location, calculation method, and output format can be con
         "Isha"
     ],
     "location": { // Default location used if no location is provided in command
-        "type": "city",
-        "city": "Cairo",
-        "country": "Egypt",
-        "state": null
+        "latitude": 30,
+        "longitude": 31,
     }
 }
 ```
