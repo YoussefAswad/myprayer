@@ -18,7 +18,6 @@ MyPrayer is a command line application for getting Islamic prayer times for a gi
 - [Typer](https://github.com/tiangolo/typer) - CLI app framework
 - [Inquirer.py](https://github.com/magmax/python-inquirer) - user prompts
 - [Rich](https://github.com/willmcgugan/rich) - output formatting
-- [Requests](https://docs.python-requests.org/en/latest/) - HTTP client
 - [adhanpy](https://pypi.org/project/adhanpy/) - Prayer times calculation
 - [geopy](https://geopy.readthedocs.io/en/stable/) - Geocoding library
 - [tzlocal](https://pypi.org/project/tzlocal/) - Local timezone
