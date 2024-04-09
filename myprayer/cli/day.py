@@ -48,14 +48,20 @@ class Day:
         Fajr: 05:20
     """
 
-    data: dict
+    date: datetime
     prayers: list[Prayer]
 
     def __init__(self, date: datetime, prayers: list[Prayer], skip: list[str] = []):
 
+        skip = [x.lower() for x in skip]
+
         self.date: datetime = date
+
+        for prayer in prayers:
+            if prayer.name.lower() in skip:
+                prayers.remove(prayer)
+
         self.prayers: list[Prayer] = prayers
-        self.skip: list[str] = skip
 
     def get_next_prayer(self) -> Prayer | None:
         for prayer in self.prayers:
