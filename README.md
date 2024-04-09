@@ -122,8 +122,7 @@ Default settings like location, calculation method, and output format can be con
 
 
 ## Credits
-- [Aladhan API](https://aladhan.com/) - for prayer time data
-- [aladhan-api](https://pypi.org/project/aladhan-api/) - i drew inspiration from this project
+- [adhanpy](https://pypi.org/project/adhanpy/) - Prayer times calculation
 
 
 ## License

@@ -5,7 +5,6 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, validator
 
-from myprayer.api.location_types import Address, City, Coordinates
 from myprayer.cli.constants import CALCULATION_METHODS, DEFAULT_PRAYERS
 from myprayer.cli.enums import OutType, TimeFormat
 
@@ -24,7 +23,7 @@ class CityModel(BaseModel):
 
 
 class CoordinatesModel(BaseModel):
-    type: Literal["coordinates"]
+    # type: Literal["coordinates"]
     latitude: float
     longitude: float
 
@@ -49,9 +48,18 @@ class ConfigModel(BaseModel):
         return v
 
 
+class Coordinates:
+    latitude: float
+    longitude: float
+
+    def __init__(self, latitude: float, longitude: float):
+        self.latitude = latitude
+        self.longitude = longitude
+
+
 # Create dataclass for config that has default values and can be loaded from file
 class Config:
-    location: City | Coordinates | Address
+    location: Coordinates
     time_format: TimeFormat = TimeFormat.twelve
     out_type: OutType = OutType.table
     method: int = 5
@@ -64,7 +72,7 @@ class Config:
         self,
         config_file: Path,
     ):
-        self.location = City("Cairo", "Egypt")
+        self.location = Coordinates(latitude=30, longitude=31)
         self.time_format = TimeFormat.twelve
         self.out_type = OutType.table
         self.method = 5
@@ -90,22 +98,27 @@ class Config:
                 self.error = "Invalid config file structure"
                 return
 
-            location_type: str = data["location"]["type"]
-            if location_type == "city":
-                self.location = City(
-                    data["location"]["city"],
-                    data["location"]["country"],
-                    data["location"]["state"] if "state" in data["location"] else None,
-                )
-            elif location_type == "coordinates":
+            # location_type: str = data["location"]["type"]
+            # if location_type == "city":
+            #     self.location = City(
+            #         data["location"]["city"],
+            #         data["location"]["country"],
+            #         data["location"]["state"] if "state" in data["location"] else None,
+            #     )
+
+            try:
                 self.location = Coordinates(
-                    data["location"]["latitude"],
-                    data["location"]["longitude"],
+                    latitude=data["location"]["latitude"],
+                    longitude=data["location"]["longitude"],
                 )
-            elif location_type == "address":
-                self.location = Address(
-                    data["location"]["address"],
-                )
+            except KeyError:
+                self.is_error = True
+                self.error = "Invalid location data"
+                return
+            # elif location_type == "address":
+            #     self.location = Address(
+            #         data["location"]["address"],
+            #     )
 
             self.time_format = TimeFormat(data["time_format"])
             self.out_type = OutType(data["print_type"])
@@ -114,11 +127,13 @@ class Config:
             self.prayers = data["prayers"]
         else:
             self.is_error = True
-            self.error = "Config file not found, please run `myprayer config` to create one."
+            self.error = (
+                "Config file not found, please run `myprayer config` to create one."
+            )
 
     def update(
         self,
-        location: Optional[City | Coordinates | Address],
+        location: Optional[Coordinates],
         time_format: Optional[TimeFormat] = None,
         out_type: Optional[OutType] = None,
         method: Optional[int] = None,
@@ -149,24 +164,10 @@ class Config:
             "prayers": self.prayers,
         }
 
-        if isinstance(self.location, City):
-            config_data["location"] = {
-                "type": "city",
-                "city": self.location.city,
-                "country": self.location.country,
-                "state": self.location.state,
-            }
-        elif isinstance(self.location, Coordinates):
-            config_data["location"] = {
-                "type": "coordinates",
-                "latitude": self.location.latitude,
-                "longitude": self.location.longitude,
-            }
-        elif isinstance(self.location, Address):
-            config_data["location"] = {
-                "type": "address",
-                "address": self.location.address,
-            }
+        config_data["location"] = {
+            "latitude": self.location.latitude,
+            "longitude": self.location.longitude,
+        }
 
         with open(config_file, "w") as f:
             json.dump(config_data, f, indent=4)

@@ -1,34 +1,35 @@
 #!/usr/bin/env python
 
 __author__ = "Youssef Aswad"
-__version__ = "2.0.5"
+__version__ = "3.0.0"
 
 import json
 from datetime import datetime
 
 import inquirer
 import typer
+import tzlocal
+from adhanpy.calculation import CalculationMethod
+from adhanpy.PrayerTimes import PrayerTimes
+from geopy import Nominatim
 from rich import print as rprint
 from rich.prompt import FloatPrompt, Prompt
 from rich.table import Table
 
-from myprayer.api.client import Client
-from myprayer.api.location_types import Address, City, Coordinates
 from myprayer.cli import utils
-from myprayer.cli.config import Config
+from myprayer.cli.config import Config, Coordinates
 from myprayer.cli.constants import (
     APP_NAME,
-    CACHE_DIR,
     CALCULATION_METHODS,
     CONFIG_FILE,
     LOCATION_TYPES,
     PRAYERS,
     TIME_FORMATS,
 )
+from myprayer.cli.day import Day, Prayer
 from myprayer.cli.enums import NextOutType, OutType, TimeFormat
 from myprayer.cli.output import DayOutput
 from myprayer.cli.utils import format_time_left
-
 
 app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False, help="MyPrayer CLI.")
 
@@ -38,32 +39,16 @@ app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False, help="MyPrayer 
 
 # Load config
 CONFIG = Config(CONFIG_FILE)
+SKIP = [prayer for prayer in PRAYERS if prayer not in CONFIG.prayers]
+# get current timezone
+tz = tzlocal.get_localzone()
 
 
-def get_client(city, country, address, latitude, longitude, method, force):
-    cache = None if force else CACHE_DIR
-    skip = [prayer for prayer in PRAYERS if prayer not in CONFIG.prayers]
+def get_coordinates(address: str):
+    nom = Nominatim(user_agent="myprayer")
+    location = nom.geocode(address)
 
-    location = None
-    if not any([city, country, address, latitude, longitude]):
-        if not CONFIG.location:
-            typer.echo(message="No location given.", err=True)
-            exit(1)
-    else:
-        if city and country:
-            location = City(city, country)
-        elif address:
-            location = Address(address)
-        elif latitude and longitude:
-            location = Coordinates(latitude, longitude)
-        else:
-            typer.echo(message="Invalid location.", err=True)
-            exit(1)
-
-    # if no location is given, use the one from config
-    location = location or CONFIG.location
-
-    return Client(location, method, skip=skip, cache_dir=cache)
+    return location.latitude, location.longitude  # type: ignore
 
 
 @app.command(name="list", help="List prayer times.")
@@ -128,7 +113,7 @@ def list_prayers(
         help="Year",
         show_default="Current year",  # type: ignore
     ),
-    method: int = typer.Option(
+    method: CalculationMethod = typer.Option(
         CONFIG.method,
         "--method",
         "-M",
@@ -159,13 +144,40 @@ def list_prayers(
         typer.echo(message=f"[ERROR] {CONFIG.error}", err=True)
         exit(1)
 
-    client = get_client(city, country, address, latitude, longitude, method, force)
+    # client = get_client(city, country, address, latitude, longitude, method, force)
 
-    today = datetime.today()
+    if city and country:
+        latitude, longitude = get_coordinates(f"{city}, {country}")
+    elif address:
+        latitude, longitude = get_coordinates(address)
+    elif latitude and longitude:
+        pass
+    else:
+        latitude, longitude = CONFIG.location.latitude, CONFIG.location.longitude
+
+    today = datetime.today().replace(tzinfo=tz)
     day = day or today.day
     month = month or today.month
     year = year or today.year
-    day_data = client.get_day(day, month, year)
+    date = datetime(year, month, day)
+    # day_data = client.get_day(day, month, year)
+    prayer_times = PrayerTimes(
+        (latitude, longitude),
+        date,
+        CalculationMethod.EGYPTIAN,
+    )
+
+    print(date)
+    prayers = [
+        Prayer("Fajr", prayer_times.fajr.astimezone(tz)),
+        Prayer("Sunrise", prayer_times.sunrise.astimezone(tz)),
+        Prayer("Dhuhr", prayer_times.dhuhr.astimezone(tz)),
+        Prayer("Asr", prayer_times.asr.astimezone(tz)),
+        Prayer("Maghrib", prayer_times.maghrib.astimezone(tz)),
+        Prayer("Isha", prayer_times.isha.astimezone(tz)),
+    ]
+
+    day_data = Day(date, prayers, SKIP)
 
     output = DayOutput(day_data, time_format, next)
 
@@ -216,7 +228,7 @@ def next(
         help="Longitude.",
         show_default=False,
     ),
-    method: int = typer.Option(
+    method: CalculationMethod = typer.Option(
         CONFIG.method,
         "--method",
         "-M",
@@ -235,9 +247,38 @@ def next(
         typer.echo(message=f"[ERROR] {CONFIG.error}", err=True)
         exit(1)
 
-    client = get_client(city, country, address, latitude, longitude, method, force)
+    if city and country:
+        latitude, longitude = get_coordinates(f"{city}, {country}")
+    elif address:
+        latitude, longitude = get_coordinates(address)
+    elif latitude and longitude:
+        pass
+    else:
+        latitude, longitude = CONFIG.location.latitude, CONFIG.location.longitude
 
-    next_prayer = client.get_next_prayer()
+    today = datetime.today().replace(tzinfo=tz)
+    # day_data = client.get_day(day, month, year)
+    prayer_times = PrayerTimes(
+        (latitude, longitude),
+        today,
+        method,
+    )
+
+    prayers = [
+        Prayer("Fajr", prayer_times.fajr),
+        Prayer("Sunrise", prayer_times.sunrise),
+        Prayer("Dhuhr", prayer_times.dhuhr),
+        Prayer("Asr", prayer_times.asr),
+        Prayer("Maghrib", prayer_times.maghrib),
+        Prayer("Isha", prayer_times.isha),
+    ]
+
+    next_prayer = None
+    day_data = Day(today, prayers, SKIP)
+    for prayer in day_data.prayers:
+        if not prayer.has_passed():
+            next_prayer = prayer
+            break
 
     if next_prayer is not None:
         time_left = format_time_left(next_prayer.time_left(), out_type)  # type: ignore
@@ -258,10 +299,6 @@ def next(
             }
             print(json.dumps(out_json, indent=4))
         elif out_type == NextOutType.waybar:
-            day_data = client.get_day(
-                next_prayer.time.day, next_prayer.time.month, next_prayer.time.year
-            )
-
             tooltip_date = day_data.date.strftime("%A, %B %d")
             tooltip_data = "\n".join(
                 [
@@ -295,55 +332,41 @@ def config():
     loc_type_choice = inquirer.prompt(loc_type_question)
     loc_type: str = loc_type_choice["type"]  # type: ignore
 
-    location = None
+    latitude = 30
+    longitude = 31
     if loc_type == "City":
         city: str = Prompt.ask(
             "City",
-            default=(
-                CONFIG.location.city if isinstance(CONFIG.location, City) else None
-            ),  # type: ignore
         )
         country: str = Prompt.ask(
             "Country",
-            default=(
-                CONFIG.location.country if isinstance(CONFIG.location, City) else None
-            ),  # type: ignore
         )
         state: str = Prompt.ask(
             "State",
             default=None,  # type: ignore
         )
-        location = City(city, country, state)
+        location = f"{city}, {country}, {state}" if state else f"{city}, {country}"
+        latitude, longitude = get_coordinates(location)
 
     elif loc_type == "Coordinates":
         latitude: float = FloatPrompt.ask(
             "Latitude",
             default=(
-                CONFIG.location.latitude
-                if isinstance(CONFIG.location, Coordinates)
-                else None
+                CONFIG.location.latitude if CONFIG.location.latitude else None
             ),  # type: ignore
         )
         longitude: float = FloatPrompt.ask(
             "Longitude",
             default=(
-                CONFIG.location.longitude
-                if isinstance(CONFIG.location, Coordinates)
-                else None
+                CONFIG.location.longitude if CONFIG.location.longitude else None
             ),  # type: ignore
         )
-        location = Coordinates(latitude, longitude)
 
     elif loc_type == "Address":
         address: str = Prompt.ask(
             "Address",
-            default=(
-                CONFIG.location.address
-                if isinstance(CONFIG.location, Address)
-                else None
-            ),  # type: ignore
         )
-        location = Address(address)
+        latitude, longitude = get_coordinates(address)
 
     # city: str = Prompt.ask(
     #     "City",
@@ -363,13 +386,14 @@ def config():
         inquirer.List(
             "method",
             message="Select a calculation method:",
-            choices=CALCULATION_METHODS,
-            default=utils.get_key(CALCULATION_METHODS, CONFIG.method),  # type: ignore
+            choices=CalculationMethod.__members__.keys(),
+            default=utils.get_key(CalculationMethod.__members__, CalculationMethod(CONFIG.method)),  # type: ignore
         ),
     ]
-    method_choice = inquirer.prompt(method_question)
-    method: int = CALCULATION_METHODS[method_choice["method"]]  # type: ignore
+    
 
+    method_choice = inquirer.prompt(method_question)
+    method: int = CalculationMethod[method_choice["method"]].value  # type: ignore
     # Prompt for time format
     time_format: str = Prompt.ask(
         "Time format",
@@ -401,7 +425,7 @@ def config():
     next = typer.confirm("Show next prayer?", default=True)
 
     CONFIG.update(
-        location=location,
+        location=Coordinates(latitude, longitude),
         time_format=TimeFormat(time_format),
         out_type=OutType(print_type),
         method=method,

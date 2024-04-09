@@ -1,9 +1,9 @@
 from rich.table import Table
 
-from myprayer.api.day import Day
 from myprayer.cli.constants import TIME_FORMATS
 from myprayer.cli.enums import OutType, TimeFormat
 from myprayer.cli.utils import format_time_left
+from myprayer.cli.day import Day
 
 
 class DayOutput:
