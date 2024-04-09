@@ -23,7 +23,7 @@ MyPrayer is a command line application for getting Islamic prayer times for a gi
 - [geopy](https://geopy.readthedocs.io/en/stable/) - Geocoding library
 - [tzlocal](https://pypi.org/project/tzlocal/) - Local timezone
 - [pydantic](https://pydantic-docs.helpmanual.io/) - Data validation
-
+- [tzdata](https://pypi.org/project/tzdata/) - Timezone data
 
 ### Install
 

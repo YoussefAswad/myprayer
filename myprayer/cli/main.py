@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 __author__ = "Youssef Aswad"
-__version__ = "3.0.1"
+__version__ = "3.0.2"
 
 import json
 from datetime import datetime
@@ -167,7 +167,6 @@ def list_prayers(
         CalculationMethod.EGYPTIAN,
     )
 
-    print(date)
     prayers = [
         Prayer("Fajr", prayer_times.fajr.astimezone(tz)),
         Prayer("Sunrise", prayer_times.sunrise.astimezone(tz)),
