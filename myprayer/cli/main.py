@@ -4,7 +4,7 @@ __author__ = "Youssef Aswad"
 __version__ = "3.0.2"
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import inquirer
 import typer
@@ -42,29 +42,6 @@ CONFIG = Config(CONFIG_FILE)
 SKIP = [prayer for prayer in PRAYERS if prayer not in CONFIG.prayers]
 # get current timezone
 tz = tzlocal.get_localzone()
-
-
-def get_prayer_times(
-    latitude: float,
-    longitude: float,
-    date: datetime,
-    method: CalculationMethod = CalculationMethod.EGYPTIAN,
-):
-    prayer_times = PrayerTimes(
-        (latitude, longitude),
-        date,
-        method,
-        time_zone=tz,
-    )
-
-    return [
-        Prayer("Fajr", prayer_times.fajr),
-        Prayer("Sunrise", prayer_times.sunrise),
-        Prayer("Dhuhr", prayer_times.dhuhr),
-        Prayer("Asr", prayer_times.asr),
-        Prayer("Maghrib", prayer_times.maghrib),
-        Prayer("Isha", prayer_times.isha),
-    ]
 
 
 def get_coordinates(address: str):
@@ -183,11 +160,11 @@ def list_prayers(
     year = year or today.year
     date = datetime(year, month, day)
     # day_data = client.get_day(day, month, year)
-    prayer_times = get_prayer_times(
-        latitude, longitude, date, CalculationMethod(method)
-    )
 
-    day_data = Day(date, prayer_times, SKIP)
+    day_data = Day(latitude, longitude, CalculationMethod(method), date, SKIP)
+
+    if day_data.has_passed():
+        day_data.next()
 
     output = DayOutput(day_data, time_format, next)
 
@@ -265,18 +242,14 @@ def next(
     else:
         latitude, longitude = CONFIG.location.latitude, CONFIG.location.longitude
 
-    today = datetime.today().replace(tzinfo=tz)
+    today = datetime.now(tz)
     # day_data = client.get_day(day, month, year)
-    prayer_times = get_prayer_times(
-        latitude, longitude, today, CalculationMethod(method)
-    )
+    day_data = Day(latitude, longitude, CalculationMethod(method), today, SKIP)
 
-    next_prayer = None
-    day_data = Day(today, prayer_times, SKIP)
-    for prayer in day_data.prayers:
-        if not prayer.has_passed():
-            next_prayer = prayer
-            break
+    if day_data.has_passed():
+        day_data.next()
+
+    next_prayer = day_data.get_next_prayer()
 
     if next_prayer is not None:
         time_left = format_time_left(next_prayer.time_left(), out_type)  # type: ignore

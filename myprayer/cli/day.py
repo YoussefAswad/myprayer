@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 
 import tzlocal
+from adhanpy.calculation import CalculationMethod
+from adhanpy.PrayerTimes import PrayerTimes
 
 tz = tzlocal.get_localzone()
 
@@ -48,20 +50,66 @@ class Day:
         Fajr: 05:20
     """
 
+    latitude: float
+    longitude: float
+    method: CalculationMethod
     date: datetime
     prayers: list[Prayer]
+    skip: list[str]
 
-    def __init__(self, date: datetime, prayers: list[Prayer], skip: list[str] = []):
-
-        skip = [x.lower() for x in skip]
+    def __init__(
+        self,
+        latitude: float = 30,
+        longitude: float = 31,
+        method: CalculationMethod = CalculationMethod.EGYPTIAN,
+        date: datetime = datetime.now(tz),
+        skip: list[str] = [],
+    ):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.method = method
+        self.skip = [x.lower() for x in skip]
 
         self.date: datetime = date
+        prayers = self.__get_prayer_times(latitude, longitude, date, method)
 
         for prayer in prayers:
-            if prayer.name.lower() in skip:
+            if prayer.name.lower() in self.skip:
                 prayers.remove(prayer)
 
         self.prayers: list[Prayer] = prayers
+
+    @staticmethod
+    def __get_prayer_times(
+        latitude: float,
+        longitude: float,
+        date: datetime,
+        method: CalculationMethod = CalculationMethod.EGYPTIAN,
+    ):
+        prayer_times = PrayerTimes(
+            (latitude, longitude),
+            date,
+            method,
+            time_zone=tz,
+        )
+
+        return [
+            Prayer("Fajr", prayer_times.fajr),
+            Prayer("Sunrise", prayer_times.sunrise),
+            Prayer("Dhuhr", prayer_times.dhuhr),
+            Prayer("Asr", prayer_times.asr),
+            Prayer("Maghrib", prayer_times.maghrib),
+            Prayer("Isha", prayer_times.isha),
+        ]
+
+    def next(self) -> None:
+        self.__init__(
+            self.latitude,
+            self.longitude,
+            self.method,
+            self.date + timedelta(days=1),
+            self.skip,
+        )
 
     def get_next_prayer(self) -> Prayer | None:
         for prayer in self.prayers:
@@ -74,6 +122,4 @@ class Day:
                 return prayer
 
     def has_passed(self) -> bool:
-        if self.prayers[-1].has_passed():
-            return True
-        return False
+        return self.prayers[-1].has_passed()
