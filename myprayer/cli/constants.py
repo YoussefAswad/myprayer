@@ -51,7 +51,6 @@ PRAYERS: Final[List[str]] = [
     "Asr",
     "Maghrib",
     "Isha",
-    "Midnight",
 ]
 
 DEFAULT_PRAYERS: Final[List[str]] = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]

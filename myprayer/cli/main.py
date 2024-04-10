@@ -44,6 +44,29 @@ SKIP = [prayer for prayer in PRAYERS if prayer not in CONFIG.prayers]
 tz = tzlocal.get_localzone()
 
 
+def get_prayer_times(
+    latitude: float,
+    longitude: float,
+    date: datetime,
+    method: CalculationMethod = CalculationMethod.EGYPTIAN,
+):
+    prayer_times = PrayerTimes(
+        (latitude, longitude),
+        date,
+        method,
+        time_zone=tz,
+    )
+
+    return [
+        Prayer("Fajr", prayer_times.fajr),
+        Prayer("Sunrise", prayer_times.sunrise),
+        Prayer("Dhuhr", prayer_times.dhuhr),
+        Prayer("Asr", prayer_times.asr),
+        Prayer("Maghrib", prayer_times.maghrib),
+        Prayer("Isha", prayer_times.isha),
+    ]
+
+
 def get_coordinates(address: str):
     nom = Nominatim(user_agent="myprayer")
     location = nom.geocode(address)
@@ -138,7 +161,6 @@ def list_prayers(
         "-n",
         help="Show next prayer, has no effect if day, month, or year are given.",
     ),
-    force: bool = typer.Option(False, "--force", "-f", help="Force update cache."),
 ):
     if CONFIG.is_error:
         typer.echo(message=f"[ERROR] {CONFIG.error}", err=True)
@@ -161,22 +183,11 @@ def list_prayers(
     year = year or today.year
     date = datetime(year, month, day)
     # day_data = client.get_day(day, month, year)
-    prayer_times = PrayerTimes(
-        (latitude, longitude),
-        date,
-        CalculationMethod.EGYPTIAN,
+    prayer_times = get_prayer_times(
+        latitude, longitude, date, CalculationMethod(method)
     )
 
-    prayers = [
-        Prayer("Fajr", prayer_times.fajr.astimezone(tz)),
-        Prayer("Sunrise", prayer_times.sunrise.astimezone(tz)),
-        Prayer("Dhuhr", prayer_times.dhuhr.astimezone(tz)),
-        Prayer("Asr", prayer_times.asr.astimezone(tz)),
-        Prayer("Maghrib", prayer_times.maghrib.astimezone(tz)),
-        Prayer("Isha", prayer_times.isha.astimezone(tz)),
-    ]
-
-    day_data = Day(date, prayers, SKIP)
+    day_data = Day(date, prayer_times, SKIP)
 
     output = DayOutput(day_data, time_format, next)
 
@@ -240,7 +251,6 @@ def next(
         "-o",
         help="Output type.",
     ),
-    force: bool = typer.Option(False, "--force", "-f", help="Force update cache."),
 ):
     if CONFIG.is_error:
         typer.echo(message=f"[ERROR] {CONFIG.error}", err=True)
@@ -257,23 +267,12 @@ def next(
 
     today = datetime.today().replace(tzinfo=tz)
     # day_data = client.get_day(day, month, year)
-    prayer_times = PrayerTimes(
-        (latitude, longitude),
-        today,
-        method,
+    prayer_times = get_prayer_times(
+        latitude, longitude, today, CalculationMethod(method)
     )
 
-    prayers = [
-        Prayer("Fajr", prayer_times.fajr),
-        Prayer("Sunrise", prayer_times.sunrise),
-        Prayer("Dhuhr", prayer_times.dhuhr),
-        Prayer("Asr", prayer_times.asr),
-        Prayer("Maghrib", prayer_times.maghrib),
-        Prayer("Isha", prayer_times.isha),
-    ]
-
     next_prayer = None
-    day_data = Day(today, prayers, SKIP)
+    day_data = Day(today, prayer_times, SKIP)
     for prayer in day_data.prayers:
         if not prayer.has_passed():
             next_prayer = prayer
@@ -389,7 +388,6 @@ def config():
             default=utils.get_key(CalculationMethod.__members__, CalculationMethod(CONFIG.method)),  # type: ignore
         ),
     ]
-    
 
     method_choice = inquirer.prompt(method_question)
     method: int = CalculationMethod[method_choice["method"]].value  # type: ignore

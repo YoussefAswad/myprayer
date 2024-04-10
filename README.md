@@ -71,7 +71,6 @@ Options
  --time-format  -t        [12|24]                      Time format. [default: 12]       
  --output       -o        [pretty|machine|table|json]  Output type. [default: table]            
  --next         -n                                     Show next prayer, has no effect if day, month, or year are given. [default: True]         
- --force        -f                                     Force update cache.       
  --help                                                Show this message and exit.  
 ```
 
@@ -91,7 +90,6 @@ Options
  --method       -M        INTEGER                      Calculation method. [default: (Egyptian General Authority of Survey)]         
  --time-format  -t        [12|24]                      Time format. [default: 12]       
  --output       -o        [pretty|machine|table|json]  Output type. [default: table]            
- --force        -f                                     Force update cache.       
  --help                                                Configure default settings
 ```
 
