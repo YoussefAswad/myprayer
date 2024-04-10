@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-__author__ = "Youssef Aswad"
-__version__ = "3.0.2"
-
 import json
 from datetime import datetime, timedelta
+from importlib.metadata import version as get_version
 
 import inquirer
 import typer
@@ -405,6 +403,26 @@ def config():
     CONFIG.save(CONFIG_FILE)
 
     rprint(f"[green]✔[/green] Configuration saved to {CONFIG_FILE}.")
+
+
+def version_callback(value: bool):
+    if value:
+        print(f"{APP_NAME} {get_version(APP_NAME)}")
+        raise typer.Exit()
+
+
+@app.callback()
+def version(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-v",
+        callback=version_callback,
+        is_eager=True,
+        help="Print the version and exit.",
+    )
+):
+    pass
 
 
 if __name__ == "__main__":
