@@ -3,9 +3,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import BaseModel, validator
+from adhanpy.calculation import CalculationMethod
+from pydantic import BaseModel, ValidationError, validator
 
-from myprayer.cli.constants import CALCULATION_METHODS, DEFAULT_PRAYERS
+from myprayer.cli.constants import DEFAULT_PRAYERS
 from myprayer.cli.enums import OutType, TimeFormat
 
 
@@ -43,7 +44,8 @@ class ConfigModel(BaseModel):
 
     @validator("method")
     def method_is_valid(cls, v):
-        if v not in CALCULATION_METHODS.values():
+        valid_methods = [m.value for m in CalculationMethod]
+        if v not in valid_methods:
             raise ValueError(f"Invalid method: {v}")
         return v
 
@@ -60,13 +62,13 @@ class Coordinates:
 # Create dataclass for config that has default values and can be loaded from file
 class Config:
     location: Coordinates
-    time_format: TimeFormat = TimeFormat.twelve
-    out_type: OutType = OutType.table
-    method: int = 5
-    next: bool = True
-    prayers: list[str] = DEFAULT_PRAYERS
-    is_error: bool = False
-    error: Optional[str] = None
+    time_format: TimeFormat
+    out_type: OutType
+    method: int
+    next: bool
+    prayers: list[str]
+    is_error: bool
+    error: Optional[str]
 
     def __init__(
         self,
@@ -75,7 +77,7 @@ class Config:
         self.location = Coordinates(latitude=30, longitude=31)
         self.time_format = TimeFormat.twelve
         self.out_type = OutType.table
-        self.method = 5
+        self.method = CalculationMethod.EGYPTIAN.value
         self.next = True
         self.prayers = DEFAULT_PRAYERS
         self.is_error = False
@@ -93,9 +95,9 @@ class Config:
             # Validate data
             try:
                 ConfigModel(**data)
-            except Exception:
+            except ValidationError as e:
                 self.is_error = True
-                self.error = "Invalid config file structure"
+                self.error = f"Invalid config file structure: {e}"
                 return
 
             # location_type: str = data["location"]["type"]
@@ -122,7 +124,16 @@ class Config:
 
             self.time_format = TimeFormat(data["time_format"])
             self.out_type = OutType(data["print_type"])
+            # FIXME: add validation for method
             self.method = data["method"]
+
+            try:
+                CalculationMethod(self.method)
+            except ValueError:
+                self.is_error = True
+                self.error = "Invalid method"
+                return
+
             self.next = data["show_next"]
             self.prayers = data["prayers"]
         else:

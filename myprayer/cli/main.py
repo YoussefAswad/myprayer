@@ -18,7 +18,6 @@ from myprayer.cli import utils
 from myprayer.cli.config import Config, Coordinates
 from myprayer.cli.constants import (
     APP_NAME,
-    CALCULATION_METHODS,
     CONFIG_FILE,
     LOCATION_TYPES,
     PRAYERS,
@@ -73,18 +72,18 @@ def list_prayers(
         show_default=False,
     ),
     latitude: float = typer.Option(
-        None,
+        CONFIG.location.latitude if CONFIG.location.latitude else None,
         "--latitude",
         "-lat",
         help="Latitude.",
-        show_default=False,
+        show_default=True,
     ),
     longitude: float = typer.Option(
-        None,
+        CONFIG.location.longitude if CONFIG.location.longitude else None,
         "--longitude",
         "-lon",
         help="Longitude.",
-        show_default=False,
+        show_default=True,
     ),
     day: int = typer.Option(
         None,
@@ -111,24 +110,27 @@ def list_prayers(
         help="Year",
         show_default="Current year",  # type: ignore
     ),
-    method: CalculationMethod = typer.Option(
+    method: int = typer.Option(
         CONFIG.method,
         "--method",
         "-M",
         help="Calculation method.",
-        show_default=f"{utils.get_key(CALCULATION_METHODS, CONFIG.method)}",  # type: ignore
+        min=0,
+        max=CalculationMethod.__len__() - 1,
     ),
     time_format: TimeFormat = typer.Option(
         CONFIG.time_format,
         "--time-format",
         "-t",
         help="Time format.",
+        show_default=f"{TimeFormat(CONFIG.time_format).value}",  # type: ignore
     ),
     out_type: OutType = typer.Option(
         CONFIG.out_type,
         "--output",
         "-o",
         help="Output type.",
+        show_default=f"{OutType(CONFIG.out_type).value}",  # type: ignore
     ),
     next: bool = typer.Option(
         CONFIG.next,
@@ -161,8 +163,11 @@ def list_prayers(
 
     day_data = Day(latitude, longitude, CalculationMethod(method), date, SKIP)
 
-    if day_data.has_passed():
-        day_data.next()
+    if date.date() == datetime.now(tz).date():
+        if day_data.has_passed():
+            day_data.next()
+    else:
+        next = False
 
     output = DayOutput(day_data, time_format, next)
 
@@ -200,31 +205,33 @@ def next(
         show_default=False,
     ),
     latitude: float = typer.Option(
-        None,
+        CONFIG.location.latitude if CONFIG.location.latitude else None,
         "--latitude",
         "-lat",
         help="Latitude.",
-        show_default=False,
+        show_default=True,
     ),
     longitude: float = typer.Option(
-        None,
+        CONFIG.location.longitude if CONFIG.location.longitude else None,
         "--longitude",
         "-lon",
         help="Longitude.",
-        show_default=False,
+        show_default=True,
     ),
-    method: CalculationMethod = typer.Option(
+    method: int = typer.Option(
         CONFIG.method,
         "--method",
         "-M",
         help="Calculation method.",
-        show_default=f"{utils.get_key(CALCULATION_METHODS, CONFIG.method)}",  # type: ignore
+        min=0,
+        max=CalculationMethod.__len__() - 1,
     ),
     out_type: NextOutType = typer.Option(
         CONFIG.out_type,
         "--output",
         "-o",
         help="Output type.",
+        show_default=f"{NextOutType(CONFIG.out_type).value}",  # type: ignore
     ),
 ):
     if CONFIG.is_error:
@@ -356,12 +363,18 @@ def config():
             "method",
             message="Select a calculation method:",
             choices=CalculationMethod.__members__.keys(),
-            default=utils.get_key(CalculationMethod.__members__, CalculationMethod(CONFIG.method)),  # type: ignore
+            default=utils.get_key(
+                CalculationMethod.__members__, CalculationMethod(CONFIG.method)
+            ),  # type: ignore
         ),
     ]
 
     method_choice = inquirer.prompt(method_question)
-    method: int = CalculationMethod[method_choice["method"]].value  # type: ignore
+
+    if method_choice is None:
+        raise typer.Abort()
+
+    method: int = CalculationMethod[method_choice["method"]].value
     # Prompt for time format
     time_format: str = Prompt.ask(
         "Time format",
@@ -411,6 +424,13 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
+def method_callback(value: bool):
+    if value:
+        for method in CalculationMethod:
+            print(f"{method.value}: {method.name}")
+        raise typer.Exit()
+
+
 @app.callback()
 def version(
     version: bool = typer.Option(
@@ -420,7 +440,14 @@ def version(
         callback=version_callback,
         is_eager=True,
         help="Print the version and exit.",
-    )
+    ),
+    method: bool = typer.Option(
+        None,
+        "--method",
+        "-M",
+        callback=method_callback,
+        help="Print the calculation methods and exit.",
+    ),
 ):
     pass
 
