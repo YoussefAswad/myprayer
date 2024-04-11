@@ -1,5 +1,6 @@
 from rich.table import Table
 
+from rich import print as rprint
 from myprayer.cli.constants import TIME_FORMATS
 from myprayer.cli.enums import OutType, TimeFormat
 from myprayer.cli.utils import format_time_left
@@ -23,6 +24,9 @@ class DayOutput:
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Prayer")
         table.add_column("Time")
+        
+        # print the date
+        rprint(f"[bold]{self.day.date.strftime('%a %B %d %Y')}[/bold]")
 
         for prayer in self.day.prayers:
             is_next = self.day.get_next_prayer() == prayer
@@ -44,6 +48,9 @@ class DayOutput:
 
     def pretty(self) -> str:
         output = ""
+            
+        # print the date
+        output += f"[bold]{self.day.date.strftime('%a %B %d %Y')}[/bold]\n\n"
 
         for i, prayer in enumerate(self.day.prayers):
             formatted_time = prayer.time.strftime(TIME_FORMATS[self.time_format])
@@ -66,7 +73,7 @@ class DayOutput:
                 TIME_FORMATS[self.time_format]
             ).replace(" ", "")
 
-            prayer_output = f"{prayer.name},{formatted_time},{prayer.time.date()}"
+            prayer_output = f"{prayer.name},{formatted_time},{prayer.time.strftime('%Y-%m-%dT%H:%M:%S%z')}"
 
             if self.show_next:
                 is_next = self.day.get_next_prayer() == prayer
@@ -81,7 +88,7 @@ class DayOutput:
 
     def json(self) -> dict:
         out_json = {
-            "date": self.day.date.strftime("%d %b %Y"),
+            "date": self.day.date.strftime("%Y-%m-%d"),
             "timings": {
                 prayer.name: prayer.time.strftime(TIME_FORMATS[self.time_format])
                 for prayer in self.day.prayers

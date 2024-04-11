@@ -31,7 +31,6 @@ from myprayer.cli.utils import format_time_left
 app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False, help="MyPrayer CLI.")
 
 
-# TODO: Add option to display date in output
 # TODO: Emphasize next prayer in waybar output <span font_weight="bold">...</span>
 
 # Load config
