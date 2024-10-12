@@ -64,11 +64,11 @@ TIME_FORMATS: Final[Dict[TimeFormat, str]] = {
 
 # dict for timedelta
 TIMEDELTA: Final[Dict[OutType | NextOutType, str]] = {
-    OutType.pretty: "{hours}H {minutes}M",
-    OutType.machine: "{hours:02d}H{minutes:02d}M",
-    OutType.table: "{hours}H {minutes}M",
-    OutType.json: "{hours}H {minutes}M",
-    NextOutType.waybar: "{hours}H {minutes}M",
+    OutType.pretty: "{hours}:{minutes} Hrs",
+    OutType.machine: "{hours:02d}:{minutes:02d} Hrs",
+    OutType.table: "{hours}:{minutes} Hrs",
+    OutType.json: "{hours:02d}:{minutes:02d} Hrs",
+    NextOutType.waybar: "{hours}:{minutes} Hrs",
 }
 
 
