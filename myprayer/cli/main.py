@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from importlib.metadata import version as get_version
 
 import inquirer
 import typer
 import tzlocal
 from adhanpy.calculation import CalculationMethod
-from adhanpy.PrayerTimes import PrayerTimes
 from geopy import Nominatim
 from rich import print as rprint
 from rich.prompt import FloatPrompt, Prompt
@@ -23,7 +22,7 @@ from myprayer.cli.constants import (
     PRAYERS,
     TIME_FORMATS,
 )
-from myprayer.cli.day import Day, Prayer
+from myprayer.cli.day import Day
 from myprayer.cli.enums import NextOutType, OutType, TimeFormat
 from myprayer.cli.output import DayOutput
 from myprayer.cli.utils import format_time_left
@@ -84,30 +83,12 @@ def list_prayers(
         help="Longitude.",
         show_default=True,
     ),
-    day: int = typer.Option(
+    date_iso: datetime = typer.Option(
         None,
-        "--day",
+        "--date",
         "-d",
-        min=1,
-        max=31,
-        help="Day (1-31)",
-        show_default="Current day",  # type: ignore
-    ),
-    month: int = typer.Option(
-        None,
-        "--month",
-        "-m",
-        min=1,
-        max=12,
-        help="Month",
-        show_default="Current month",  # type: ignore
-    ),
-    year: int = typer.Option(
-        None,
-        "--year",
-        "-y",
-        help="Year",
-        show_default="Current year",  # type: ignore
+        help="Date (YYYY-MM-DD) ISO 8601",
+        show_default="Current date",  # type: ignore
     ),
     method: int = typer.Option(
         CONFIG.method,
@@ -153,12 +134,9 @@ def list_prayers(
     else:
         latitude, longitude = CONFIG.location.latitude, CONFIG.location.longitude
 
-    today = datetime.today().replace(tzinfo=tz)
-    day = day or today.day
-    month = month or today.month
-    year = year or today.year
-    date = datetime(year, month, day)
-    # day_data = client.get_day(day, month, year)
+    date = (
+        date_iso.replace(tzinfo=tz) if date_iso else datetime.today().replace(tzinfo=tz)
+    )
 
     day_data = Day(latitude, longitude, CalculationMethod(method), date, SKIP)
 
