@@ -2,8 +2,6 @@
 
 from enum import Enum
 
-from adhanpy.calculation import CalculationMethod
-
 
 # Create enum for print type
 class OutType(str, Enum):

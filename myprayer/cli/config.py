@@ -37,6 +37,7 @@ class AddressModel(BaseModel):
 class ConfigModel(BaseModel):
     location: CityModel | CoordinatesModel | AddressModel
     time_format: TimeFormat
+    custom_time_format: Optional[str] = None
     print_type: OutType
     method: int
     show_next: bool
@@ -63,6 +64,7 @@ class Coordinates:
 class Config:
     location: Coordinates
     time_format: TimeFormat
+    custom_time_format: Optional[str]
     out_type: OutType
     method: int
     next: bool
@@ -76,6 +78,7 @@ class Config:
     ):
         self.location = Coordinates(latitude=30, longitude=31)
         self.time_format = TimeFormat.twelve
+        self.custom_time_format = None
         self.out_type = OutType.table
         self.method = CalculationMethod.EGYPTIAN.value
         self.next = True
@@ -122,6 +125,9 @@ class Config:
             #         data["location"]["address"],
             #     )
 
+            if "custom_time_format" in data:
+                self.custom_time_format = data["custom_time_format"]
+
             self.time_format = TimeFormat(data["time_format"])
             self.out_type = OutType(data["print_type"])
             # FIXME: add validation for method
@@ -146,6 +152,7 @@ class Config:
         self,
         location: Optional[Coordinates],
         time_format: Optional[TimeFormat] = None,
+        custom_time_format: Optional[str] = None,
         out_type: Optional[OutType] = None,
         method: Optional[int] = None,
         next: Optional[bool] = None,
@@ -155,6 +162,7 @@ class Config:
             self.location = location
         if time_format is not None:
             self.time_format = time_format
+        self.custom_time_format = custom_time_format
         if out_type is not None:
             self.out_type = out_type
         if method is not None:
@@ -164,9 +172,7 @@ class Config:
         if prayers is not None:
             self.prayers = prayers
 
-    def save(self, config_file: Path):
-        if not config_file.parent.exists():
-            config_file.parent.mkdir(parents=True, exist_ok=True)
+    def to_dict(self):
         config_data = {
             "time_format": self.time_format.value,
             "print_type": self.out_type.value,
@@ -175,10 +181,20 @@ class Config:
             "prayers": self.prayers,
         }
 
+        if self.custom_time_format is not None:
+            config_data["custom_time_format"] = self.custom_time_format
+
         config_data["location"] = {
             "latitude": self.location.latitude,
             "longitude": self.location.longitude,
         }
 
+        return config_data
+
+    def save(self, config_file: Path):
+        if not config_file.parent.exists():
+            config_file.parent.mkdir(parents=True, exist_ok=True)
+
+        config_data = self.to_dict()
         with open(config_file, "w") as f:
             json.dump(config_data, f, indent=4)

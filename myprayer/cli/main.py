@@ -3,6 +3,7 @@
 import json
 from datetime import datetime
 from importlib.metadata import version as get_version
+from typing import Optional
 
 import inquirer
 import typer
@@ -33,7 +34,7 @@ app = typer.Typer(name=APP_NAME, pretty_exceptions_enable=False, help="MyPrayer 
 # TODO: Emphasize next prayer in waybar output <span font_weight="bold">...</span>
 
 # Load config
-CONFIG = Config(CONFIG_FILE)
+CONFIG: Config = Config(CONFIG_FILE)
 SKIP = [prayer for prayer in PRAYERS if prayer not in CONFIG.prayers]
 # get current timezone
 tz = tzlocal.get_localzone()
@@ -105,6 +106,13 @@ def list_prayers(
         help="Time format.",
         show_default=f"{TimeFormat(CONFIG.time_format).value}",  # type: ignore
     ),
+    custom_time_format: str = typer.Option(
+        CONFIG.custom_time_format,
+        "--custom-time-format",
+        "-T",
+        help="Custom time format.",
+        show_default=True,  # type: ignore
+    ),
     out_type: OutType = typer.Option(
         CONFIG.out_type,
         "--output",
@@ -146,7 +154,11 @@ def list_prayers(
     else:
         next = False
 
-    output = DayOutput(day_data, time_format, next)
+    used_time_format = (
+        custom_time_format if custom_time_format else TIME_FORMATS[time_format]
+    )
+
+    output = DayOutput(day_data, used_time_format, next)
 
     if out_type == OutType.table:
         rprint(output.table())
@@ -273,6 +285,7 @@ def next(
 
 @app.command(name="config", help="Configure myprayer.")
 def config():
+
     # Prompt for city
     loc_type_question = [
         inquirer.List(
@@ -321,19 +334,6 @@ def config():
         )
         latitude, longitude = get_coordinates(address)
 
-    # city: str = Prompt.ask(
-    #     "City",
-    #     default=CONFIG.city,
-    #     show_default=True if CONFIG.city else False,
-    # )
-    #
-    # # Prompt for country
-    # country: str = Prompt.ask(
-    #     "Country",
-    #     default=CONFIG.country,
-    #     show_default=True if CONFIG.country else False,
-    # )
-
     # Prompt for calculation method
     method_question = [
         inquirer.List(
@@ -352,12 +352,41 @@ def config():
         raise typer.Abort()
 
     method: int = CalculationMethod[method_choice["method"]].value
+
     # Prompt for time format
-    time_format: str = Prompt.ask(
-        "Time format",
-        choices=[TimeFormat.twelve, TimeFormat.twenty_four],
-        default=TimeFormat.twelve.value,
-    )
+    custom_time_format: Optional[str] = None
+    time_format: str = TimeFormat(CONFIG.time_format).value
+
+    is_custom_time_format_question = [
+        inquirer.Confirm(
+            "is_custom_time_format",
+            message="Use custom time format?",
+            default=CONFIG.custom_time_format is not None,
+        )
+    ]
+
+    is_custom_time_format = inquirer.prompt(is_custom_time_format_question)
+
+    if is_custom_time_format is None:
+        raise typer.Abort()
+
+    if is_custom_time_format["is_custom_time_format"]:
+        custom_time_format = Prompt.ask(
+            "Time format",
+            default=(
+                CONFIG.custom_time_format if CONFIG.custom_time_format else "%I:%M %p"
+            ),
+        )
+
+    else:
+        time_format: str = Prompt.ask(
+            "Time format",
+            choices=[
+                TimeFormat.twelve,
+                TimeFormat.twenty_four,
+            ],
+            default=TimeFormat.twelve.value,
+        )
 
     # Prompt for print type
     print_type: str = Prompt.ask(
@@ -384,6 +413,7 @@ def config():
 
     CONFIG.update(
         location=Coordinates(latitude, longitude),
+        custom_time_format=custom_time_format,
         time_format=TimeFormat(time_format),
         out_type=OutType(print_type),
         method=method,
