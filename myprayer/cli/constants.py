@@ -68,7 +68,7 @@ TIMEDELTA: Final[Dict[OutType | NextOutType, str]] = {
     OutType.machine: "{hours:02d}:{minutes:02d} Hrs",
     OutType.table: "{hours}:{minutes} Hrs",
     OutType.json: "{hours:02d}:{minutes:02d} Hrs",
-    NextOutType.waybar: "{hours}:{minutes} Hrs",
+    NextOutType.waybar: "{hours:02d}:{minutes:02d} Hrs",
 }
 
 

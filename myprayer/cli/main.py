@@ -264,10 +264,15 @@ def next(
             }
             print(json.dumps(out_json, indent=4))
         elif out_type == NextOutType.waybar:
+            time_format = (
+                CONFIG.custom_time_format
+                if CONFIG.custom_time_format
+                else TIME_FORMATS[CONFIG.time_format]
+            )
             tooltip_date = day_data.date.strftime("%A, %B %d")
             tooltip_data = "\n".join(
                 [
-                    f"{prayer.name}: {prayer.time.strftime(TIME_FORMATS[CONFIG.time_format])}"
+                    f"{prayer.name}: {prayer.time.strftime(time_format)}"
                     for prayer in day_data.prayers
                 ]
             )
