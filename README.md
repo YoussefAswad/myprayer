@@ -59,19 +59,18 @@ Commands
 Usage: myprayer list [OPTIONS]                                                                                                                                                                 
 List prayer times.                                                                                                                                                                             
 Options 
- --city         -c        TEXT                         City name.                            
- --country      -C        TEXT                         Country name.                              
- --address      -a        TEXT                         Address.                               
- --latitude     -lat      FLOAT                        Latitude.                               
- --longitude    -lon      FLOAT                        Longitude. 
- --day          -d        INTEGER RANGE [1<=x<=31]     Day (1-31) [default: (Current day)]            
- --month        -m        INTEGER RANGE [1<=x<=12]     Month [default: (Current month)]                       
- --year         -y        INTEGER                      Year [default: (Current year)]                          
- --method       -M        INTEGER                      Calculation method. [default: (Egyptian General Authority of Survey)]         
- --time-format  -t        [12|24]                      Time format. [default: 12]       
- --output       -o        [pretty|machine|table|json]  Output type. [default: table]            
- --next         -n                                     Show next prayer, has no effect if day, month, or year are given. [default: True]         
- --help                                                Show this message and exit.  
+ --city                 -c        TEXT                         City name.                            
+ --country              -C        TEXT                         Country name.                              
+ --address              -a        TEXT                         Address.                               
+ --latitude             -lat      FLOAT                        Latitude.                               
+ --longitude            -lon      FLOAT                        Longitude. 
+ --date                 -d        [%Y-%m-%d|%Y-%m-%dT%H:%M:%S  Date (YYYY-MM-DD) ISO 8601
+ --method               -M        INTEGER                      Calculation method. [default: (Egyptian General Authority of Survey)]         
+ --time-format          -t        [12|24]                      Time format. [default: 12]       
+ --custom-time-format   -T        TEXT                         Custom time format.
+ --output               -o        [pretty|machine|table|json]  Output type. [default: table]            
+ --next                 -n                                     Show next prayer, has no effect if day, month, or year are given. [default: True]         
+ --help                                                        Show this message and exit.  
 ```
 
 ### myparyer next
@@ -103,6 +102,7 @@ Default settings like location, calculation method, and output format can be con
 ```jsonc
 {
     "time_format": "12", // 12 or 24
+    "custom_time_format": "%I:%M", // Custom time format
     "print_type": "table", // pretty, machine, table, json
     "method": 5, // Calculation method
     "show_next": true, // Highlight next prayer in list
